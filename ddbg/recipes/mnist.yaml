@@ -1,0 +1,22 @@
+project:
+  name: 'sample_mnist_embed2'
+  output_dir: './outputs/ddbg_results/mnist/embed2'
+dataset:
+  name: 'mnist'
+model:
+  arch: 'embed2'
+  checkpoint_path: './outputs/ckpts_base/mnist/embed2'
+trainer:
+  base:
+    epochs: 12
+    batch_size: 64
+    optimizer:
+      name: 'adam'
+  embedding:
+    pretrained_base_epoch: 6
+    checkpoint_path: './outputs/ckpts_embed/mnist/embed2'
+data_influence:
+  checkpoint_epochs: 4,6,8
+  self_influence_path: './outputs/ddbg_results/mnist/embed2'
+  prop_oppos_path: './outputs/ddbg_results/mnist/embed2'
+

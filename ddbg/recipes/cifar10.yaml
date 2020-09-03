@@ -1,0 +1,27 @@
+project:
+  name: 'sample_cifar10_resnet50'
+  output_dir: './outputs/ddbg_results/cifar10/resnet50'
+dataset:
+  name: 'cifar10'
+model:
+  arch: 'resnet50'
+  checkpoint_path: './outputs/ckpts_base/cifar10/resnet50'
+trainer:
+  base:
+    epochs: 100
+    batch_size: 1024
+    base_lr: 0.8
+    lr_decay_rate: 0.1
+    lr_schedule:
+      cosine: True
+    optimizer:
+      momentum: 0.9
+      weight_decay: 1e-4
+  embedding:
+    pretrained_base_epoch: 70
+    checkpoint_path: './outputs/ckpts_embed/cifar10/resnet50'
+
+data_influence:
+  checkpoint_epochs: 60,70,80
+  self_influence_path: './outputs/ddbg_results/cifar10/resnet50'
+  prop_oppos_path: './outputs/ddbg_results/cifar10/resnet50'
