@@ -85,7 +85,8 @@ class ProgressParallel(joblib.Parallel):
     def print_progress(self):
         # self._pbar.total = self.n_dispatched_tasks
         self._pbar.n = self.n_completed_tasks
-        self._pbar.refresh()
+        if ( self._pbar.n % 100 ) == 0:
+            self._pbar.refresh()
 
 class DatasetProponentOpponents( object ):
 
