@@ -7,7 +7,7 @@ Debugger for ML Datasets
 ```
 from ddbg import DatasetDebugger
 ddbg_project = DatasetDebugger.from_recipe('mnist')
-ddbg_results = ddbg_project.calc_dataset__mislabel_scores()
+ddbg_results = ddbg_project.calc_train_dataset__mislabel_scores()
 
 
 from ddbg import DdbgVisualize

@@ -1,8 +1,9 @@
 include LICENSE
 include README.md
 
-recursive-exclude *~
 recursive-include tests *
+recursive-include ddbg *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
+recursive-exclude * *~
 
