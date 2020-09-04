@@ -86,7 +86,7 @@ class DatasetSelfInfluence( object ):
 
         n_batches = len( self.data_loader ) 
         progress_bar = tqdm(
-            desc='SI Batch',
+            desc='Self Influence',
             total=n_batches,
             initial=0,
         )

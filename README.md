@@ -14,11 +14,12 @@ from ddbg import DdbgVisualize
 ddbg_viz = DdbgVisualize( ddbg_project )
 # ddbg_results = ddbg_project.load_ddbg_project_results()
 
-ddbg_viz.visualize_top_self_influence( ddbg_results )
+plts = ddbg_viz.visualize_top_self_influence( ddbg_results, end_idx=16 )
 
-ddbg_viz.visualize_top_mislabel_score_items( ddbg_results, end_idx=8 )
+plts = ddbg_viz.visualize_top_mislabel_score_items( ddbg_results, end_idx=16 )
 
-ddbg_viz.visualize_dataset_embeddings( ddbg_results )
+plt = ddbg_viz.visualize_dataset_embeddings( ddbg_results )
+
 ```
 
 - TODO

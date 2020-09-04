@@ -1,7 +1,7 @@
 import os, logging
 
 import matplotlib
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -50,7 +50,8 @@ class DdbgVisualize( object ):
         plt.plot( steps, step_losses )
         plt.xlabel('Step')
         plt.ylabel('Loss')
-        plt.show()
+
+        return plt
     
 
     def visualize_top_self_influence(
@@ -71,6 +72,7 @@ class DdbgVisualize( object ):
         self_influence_scores = ddbg_results.self_influence_scores        
         indices = np.argsort(-self_influence_scores if sort_order=='highest' else self_influence_scores)
 
+        plots = []
         for plot_offset in range (start_idx, end_idx, rows):
             indices_to_plot = indices[ plot_offset:plot_offset+rows ]
         
@@ -80,6 +82,9 @@ class DdbgVisualize( object ):
                 ddbg_results,
                 color_map = color_map,
             )
+            plots.append( plt )
+
+        return plots
         
     def gen_item__prop_oppo_figure(
             self,
@@ -146,7 +151,7 @@ class DdbgVisualize( object ):
                 _=subplot.set_yticks([])
             
 
-        plt.show()
+        # plt.show()
         return plt
 
     def get_mislabel_indices_above_thresh(
@@ -189,7 +194,8 @@ class DdbgVisualize( object ):
             dataset_indices = possible_mislabel_indices[ indices ]
             plt.scatter(embeddings_2d[dataset_indices,0], embeddings_2d[dataset_indices,1], alpha=0.8, color='#000000', marker='$%s$' % label, zorder=10)
 
-        plt.show()
+        # plt.show()
+        return plt
 
     def visualize_top_mislabel_score_items(
             self,
@@ -204,13 +210,17 @@ class DdbgVisualize( object ):
         
         train_dataset, _ = self.dataset.get_datasets( self.cfg.dataset.dataset_path, None, None)
 
+        plots = []
         for plot_offset in range (start_idx, end_idx, rows):
             indices_to_plot = possible_mislabel_indices[ plot_offset:plot_offset+rows ]
-            self.gen_item__prop_oppo_figure(
+            plt = self.gen_item__prop_oppo_figure(
                 indices_to_plot,
                 train_dataset,
                 ddbg_results,
             )
+            plots.append( plt )
+
+        return plots
         
         
     def _project_2d_via_umap( self, embeddings, n_neighbors=10, min_dist=0.99, ):

@@ -126,7 +126,7 @@ class DatasetProponentOpponents( object ):
 
         n_batches = len( self.data_loader ) 
         progress_bar = tqdm(
-            desc='P&O Batch',
+            desc='Prop & Oppos',
             total=n_batches,
             initial=0,
         )

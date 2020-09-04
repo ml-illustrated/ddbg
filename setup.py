@@ -15,14 +15,16 @@ def read(filename):
 
 requirements = [
     'numpy',
-    'torch',
-    'torchvision',
-    'Pillow',
-    'pytorch-lightning',
-    'umap-learn',
+    'torch==1.6.*',
+    'torchvision==0.7.*',
+    'Pillow==7.*',
+    'pytorch-lightning==0.9.*',
+    'umap-learn==0.4.*',
     'fvcore',
     'psutil',
-    'matplotlib',
+    'matplotlib==3.2.*',
+    'tensorboard==2.2.*',
+    'future==0.18.*',
 ]
 
 
