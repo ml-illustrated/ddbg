@@ -8,6 +8,7 @@ import psutil
 import torch
 import torch.nn as nn
 
+from tqdm.auto import tqdm
 
 class ProponentOpponentsResults( object ):
 
@@ -76,6 +77,16 @@ class ProponentOpponentsResults( object ):
         )        
 
 
+class ProgressParallel(joblib.Parallel):
+    def __call__(self, total_calls, *args, **kwargs):
+        with tqdm( total=total_calls ) as self._pbar:
+            return joblib.Parallel.__call__(self, *args, **kwargs)
+
+    def print_progress(self):
+        # self._pbar.total = self.n_dispatched_tasks
+        self._pbar.n = self.n_completed_tasks
+        self._pbar.refresh()
+
 class DatasetProponentOpponents( object ):
 
     def __init__(
@@ -113,6 +124,13 @@ class DatasetProponentOpponents( object ):
             self,
     ) -> ProponentOpponentsResults:
 
+        n_batches = len( self.data_loader ) 
+        progress_bar = tqdm(
+            desc='P&O Batch',
+            total=n_batches,
+            initial=0,
+        )
+        
         all_loss_grads = []
         all_targets = []
         all_embed_activations = []
@@ -120,8 +138,6 @@ class DatasetProponentOpponents( object ):
         all_last_predicted_labels = []
         num_classes = len( self.data_loader.dataset.classes )
         for idx, (inputs, targets, input_indexes) in enumerate( self.data_loader ):
-            if (idx % 50) == 0:
-                self.logger.debug( 'trakin_gradients batch %s' % idx )
             # inputs.shape:  torch.Size([64, 3, 32, 32])
             # targets.shape: torch.Size([64])
             all_targets.append( targets )
@@ -146,6 +162,8 @@ class DatasetProponentOpponents( object ):
             del batch_loss_grads
             del batch_embed_activations
             del last_output_probs
+            # update progress
+            progress_bar.update(1)
         
         results = ProponentOpponentsResults( 
             dataset_loss_grads = np.concatenate( all_loss_grads ),
@@ -213,7 +231,7 @@ class DatasetProponentOpponents( object ):
         train_loss_grads = prop_oppo_results.dataset_loss_grads
         train_activations = prop_oppo_results.dataset_embed_activations
         target_labels = prop_oppo_results.dataset_target_labels
-        last_predicted_labels = prop_oppo_results.final_predicted_labels
+        # last_predicted_labels = prop_oppo_results.final_predicted_labels
         
         loss_grad_similarity = np.sum( train_loss_grads * loss_grad, axis=(1,2) ) # -> (60000)
         # find the -embeds w/ min the absolute differeces to input embed
@@ -264,15 +282,15 @@ class DatasetProponentOpponents( object ):
         train_activations = prop_oppo_results.dataset_embed_activations
         target_labels = prop_oppo_results.dataset_target_labels
 
-        # pre-compute support/opponents per training point
+        num_samples = train_loss_grads.shape[0]
+
+        # pre-compute proponents/opponents per training point
         train_idx__top_proponents = []
         train_idx__top_opponents = []
 
         n_jobs = psutil.cpu_count(logical=False)
-        with joblib.Parallel( n_jobs=n_jobs, prefer='threads') as parallel:
+        with ProgressParallel( n_jobs=n_jobs, prefer='threads' ) as parallel:
             def func_to_call( idx ):
-                if (idx % 500) == 0:
-                    self.logger.debug( 'prop_&_opponents item %s' % idx )
                 
                 target_class = target_labels[ idx ]
                 loss_grad = train_loss_grads[ idx ]
@@ -284,13 +302,14 @@ class DatasetProponentOpponents( object ):
                     prop_oppo_results,
                     top_k=top_k,
                 ) # -> (5,4) (5,4)
+
                 return top_props, top_oppos
 
             jobs = []
-            for idx in range( train_loss_grads.shape[0] ):
+            for idx in range( num_samples ):
                 jobs.append( joblib.delayed(func_to_call)(idx) )
                 
-            results = parallel( jobs )
+            results = parallel( num_samples, jobs )
 
             train_idx__top_proponents = np.array( [ i[0] for i in results ] )
             train_idx__top_opponents  = np.array( [ i[1] for i in results ] )

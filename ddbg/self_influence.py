@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from tqdm.auto import tqdm
+
 # https://gist.github.com/apaszke/226abdf867c4e9d6698bd198f3b45fb7
 def jacobian( y, x, create_graph=False ):
     jac = []
@@ -82,12 +84,17 @@ class DatasetSelfInfluence( object ):
             self
     ) -> SelfInfluenceResults:
 
+        n_batches = len( self.data_loader ) 
+        progress_bar = tqdm(
+            desc='SI Batch',
+            total=n_batches,
+            initial=0,
+        )
+
         all_influence_scores = []
         all_final_output_probs = []
         all_final_predicted_labels = []
         for idx, (inputs, targets, input_indexes) in enumerate( self.data_loader ):
-            if (idx % 50) == 0:
-                self.logger.debug( 'self_influence batch %s' % idx )
             # inputs.shape:  torch.Size([64, 3, 32, 32])
             # targets.shape: torch.Size([64])
             
@@ -107,6 +114,8 @@ class DatasetSelfInfluence( object ):
             del self_influence_scores
             del final_output_probs
             del final_predicted_labels
+            # update progress
+            progress_bar.update(1)
         
         self_influence_scores = np.concatenate( all_influence_scores )
         final_output_probs = np.concatenate( all_final_output_probs )

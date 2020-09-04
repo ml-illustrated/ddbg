@@ -20,7 +20,6 @@ requirements = [
     'Pillow',
     'pytorch-lightning',
     'umap-learn',
-    'pynndescent',
     'fvcore',
     'psutil',
     'matplotlib',

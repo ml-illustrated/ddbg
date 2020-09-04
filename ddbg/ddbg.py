@@ -1,4 +1,5 @@
 import os, logging, psutil
+from typing import Tuple
 
 import numpy as np
 import torch
@@ -50,19 +51,19 @@ class DatasetDebugger( object ):
 
         return ddbg_project
         
-    def calc_dataset__mislabel_scores(
+    def calc_train_dataset__mislabel_scores(
             self,
             precalc_all_prop_oppos:bool = True,
     ) -> DdbgResults:
         '''
-        Primary function to compute a dataset's stats
+        Primary function to compute a dataset's mislabel stats
         '''
 
         self.logger.info( 'Start dataset analysis..' )
-        self.train_base_model()
+        # !!!!!!!!!!!! self.train_base_model()
         self.logger.info( 'Training base model done.')
 
-        self_influence_results = self.calc_dataset_self_influence()
+        # !!!!!!!!!!! self_influence_results = self.calc_dataset_self_influence()
         prop_oppo_results = self.calc_dataset_proponent_opponents( precalc_all_prop_oppos )
         '''
         self_influence_results = self.load_self_influence_results()
@@ -72,9 +73,10 @@ class DatasetDebugger( object ):
         self.train_embedding_model( self_influence_results )
         self.logger.info( 'Training embedding model done.')
 
-        mislabel_scores = self.calc_mislabel_scores( self_influence_results )
+        mislabel_scores, centroid_embeddings = self.calc_train_dataset_mislabel_scores( self_influence_results )
 
         ddbg_results = DdbgResults(
+            centroid_embeddings = centroid_embeddings,
             mislabel_scores = mislabel_scores,
             self_influence_scores = self_influence_results.self_influence_scores,
             final_predicted_classes = self_influence_results.final_predicted_labels, # TODO: recompute?
@@ -88,6 +90,13 @@ class DatasetDebugger( object ):
         self.logger.info( 'Dataset analysis complete and saved to %s.' % output_path )        
         
         return ddbg_results
+
+    def load_ddbg_project_results( self ):
+        load_path = os.path.join( self.cfg.project.output_dir, self.cfg.file_names.project_results )
+        ddbg_results = DdbgResults.load( load_path )
+        
+        return ddbg_results
+        
         
     def train_base_model( self ):
         model = self._init_model()
@@ -100,13 +109,17 @@ class DatasetDebugger( object ):
         model_trainer.train()
         model_trainer.eval_base_model_metric()
 
-    def calc_dataset_self_influence( self ) -> SelfInfluenceResults:
+    def calc_dataset_self_influence(
+            self,
+            use_train_dataset: bool = True,
+    ) -> SelfInfluenceResults:
 
         self.logger.info( 'Calculating self influence..' )
         
         models = self._load_base_model_checkpoints()
 
-        train_loader, _ = self._get_dataset_for_data_influence()
+        train_loader, test_loader = self._get_dataset_for_data_influence()
+        data_loader = train_loader if use_train_dataset else test_loader
 
         embed_layer_name = self.cfg.model.embed_layer_name
 
@@ -116,19 +129,21 @@ class DatasetDebugger( object ):
         self_infl_gen = DatasetSelfInfluence( 
             models,
             func_model__monitor_layer,
-            data_loader = train_loader
+            data_loader = data_loader,
         )
         
         self_influence_results = self_infl_gen.calc_self_influence_results()
 
-        if self.cfg.data_influence.self_influence_path:            
-            file_name = os.path.join( self.cfg.data_influence.self_influence_path, self.cfg.file_names.self_influence_results )
+        if self.cfg.data_influence.self_influence_path:
+            file_name = self.cfg.file_names.train_dataset_self_influence_results if use_train_dataset else self.cfg.file_names.test_dataset_self_influence_results
+            file_name = os.path.join( self.cfg.data_influence.self_influence_path, file_name )
             self_influence_results.save( file_name )
 
         return self_influence_results
 
     def calc_dataset_proponent_opponents(
             self,
+            use_train_dataset: bool = True,            
             precalc_all_prop_oppos:bool = True,
     ) -> ProponentOpponentsResults:
 
@@ -136,11 +151,12 @@ class DatasetDebugger( object ):
         
         models = self._load_base_model_checkpoints()
 
-        train_loader, _ = self._get_dataset_for_data_influence()
+        train_loader, test_loader = self._get_dataset_for_data_influence()
+        data_loader = train_loader if use_train_dataset else test_loader
         
         prop_oppo_gen = DatasetProponentOpponents(
             models,
-            train_loader,
+            data_loader,
         )
 
         prop_oppo_results = prop_oppo_gen.calc_proponent_opponent_results(
@@ -148,7 +164,8 @@ class DatasetDebugger( object ):
         )
 
         if self.cfg.data_influence.prop_oppos_path:
-            file_name = os.path.join( self.cfg.data_influence.prop_oppos_path, self.cfg.file_names.prop_oppos_results )
+            file_name = self.cfg.file_names.train_dataset_prop_oppos_results if use_train_dataset else self.cfg.file_names.test_dataset_prop_oppos_results
+            file_name = os.path.join( self.cfg.data_influence.prop_oppos_path, file_name )
             prop_oppo_results.save( file_name )
 
         return prop_oppo_results
@@ -168,10 +185,10 @@ class DatasetDebugger( object ):
         )
         embedding_trainer.train()
 
-    def calc_mislabel_scores(
+    def calc_train_dataset_mislabel_scores(
             self,
             self_influence_results: SelfInfluenceResults,            
-    ) -> np.ndarray:
+    ) -> Tuple[ np.ndarray, np.ndarray ]:
 
         self.logger.info( 'Generating embeddings..' )
 
@@ -180,8 +197,27 @@ class DatasetDebugger( object ):
 
         self.logger.info( 'Calculating mislabel scores..' )        
         num_classes = self.dataset.num_classes
-        embed_idx__dist_from_centroid =  self._calc_embed__centroid_dist( num_classes, embeddings, labels )
+        class_id__centroid_embedding = self._calc_centroid_embeddings( num_classes, embeddings, labels )
 
+        embed_idx__dist_from_centroid = self._calc_embed__centroid_dist( class_id__centroid_embedding, embeddings, labels )
+
+        idx__mislabel_score = self._calc_mislabel_scores( self_influence_results, embed_idx__dist_from_centroid )
+
+        '''
+        if self.cfg.project.output_dir:
+            file_name = os.path.join( self.cfg.project.output_dir, self.cfg.file_names.train_dataset_mislabel_scores )
+            with open( file_name, 'wb' ) as fp:
+                np.save( fp, idx__mislabel_score )
+        '''
+        
+        return idx__mislabel_score, class_id__centroid_embedding
+
+    def _calc_mislabel_scores(
+            self,
+            self_influence_results: SelfInfluenceResults,
+            embed_idx__dist_from_centroid: np.ndarray,
+    ) -> np.ndarray:
+            
         self_influence_scores = self_influence_results.self_influence_scores
         self_influence_scores_normed = self_influence_scores / self_influence_scores.max()
         # idx__mislabel_score = embed_idx__dist_from_centroid*self_influence_scores_normed
@@ -189,19 +225,16 @@ class DatasetDebugger( object ):
         # idx__mislabel_score = embed_idx__dist_from_centroid # mixture of unusuals and mislabels
         idx__mislabel_score = embed_idx__dist_from_centroid+self_influence_scores_normed # top rank mislabels, then dominated by unusuals
 
-        if self.cfg.project.output_dir:
-            file_name = os.path.join( self.cfg.project.output_dir, self.cfg.file_names.train_dataset_mislabel_scores )
-            with open( file_name, 'wb' ) as fp:
-                np.save( fp, idx__mislabel_score )
-        
         return idx__mislabel_score
 
-    
-    def _calc_embed__centroid_dist( self, num_classes, embeddings, target_labels ):
+    def _calc_centroid_embeddings(
+            self,
+            num_classes: int,
+            embeddings:  np.ndarray,
+            target_labels:np.ndarray,
+    ) -> np.ndarray:
                                   
-        # embedding_idx__centroid_dist = np.zeros( embeddings.shape[0] )
-        class_id__centroid = []
-        embed_idx__dist_from_centroid = np.zeros( embeddings.shape[0], dtype=np.float )    
+        class_id__centroid_embedding = []
         for class_id in range( num_classes ):
             indicies = np.where( target_labels == class_id )[0]
             class_embeddings = embeddings[ indicies ]
@@ -210,10 +243,24 @@ class DatasetDebugger( object ):
             dist_to_centroid = np.linalg.norm( centered, axis=1 )
             # do quick outlier rejection
             within_cluster = class_embeddings[ dist_to_centroid < dist_to_centroid.mean() + 2*dist_to_centroid.std() ]
-            # print( 'filtered %s centroid from %s to %s' % ( class_id, len( class_embeddings ), len( within_cluster ) ) )
+            self.logger.debug( 'filtered %s centroid from %s to %s' % ( class_id, len( class_embeddings ), len( within_cluster ) ) )
             centroid_embedding = within_cluster.mean( axis=0 )                
-            class_id__centroid.append( centroid_embedding )
-            
+            class_id__centroid_embedding.append( centroid_embedding )
+
+        return np.array( class_id__centroid_embedding )
+    
+    def _calc_embed__centroid_dist(
+            self,
+            class_id__centroid_embedding: np.ndarray,
+            embeddings:  np.ndarray,
+            target_labels:np.ndarray,
+    ) -> np.ndarray:
+                                  
+        embed_idx__dist_from_centroid = np.zeros( embeddings.shape[0], dtype=np.float )    
+        for class_id, centroid_embedding in enumerate( class_id__centroid_embedding ):
+            indicies = np.where( target_labels == class_id )[0]
+            class_embeddings = embeddings[ indicies ]
+
             # calc max dist to updated centroid
             centered = class_embeddings - centroid_embedding
             dist_to_centroid = np.linalg.norm( centered, axis=1 )
@@ -312,7 +359,11 @@ class DatasetDebugger( object ):
         )
         return train_loader, test_loader
 
-    def _train_dataset_model__embeddings( self, embed_epoch ):
+    def _train_dataset_model__embeddings(
+            self,
+            embed_epoch: int
+    ) -> Tuple[ np.ndarray, np.ndarray ]:
+
         embed_model = self._init_model( embed_mode=True )
         # embed_model.load_pretrained_base_model( 11 ) # visualize base model
         embed_model.load_pretrained( epoch=embed_epoch )
@@ -322,7 +373,12 @@ class DatasetDebugger( object ):
         embeddings, labels = self._extract_embeddings(train_loader, embed_model)
         return embeddings, labels
 
-    def _extract_embeddings(self, dataloader, embed_model):
+    def _extract_embeddings(
+            self,
+            dataloader,
+            embed_model
+    ) -> Tuple[ np.ndarray, np.ndarray ]:
+
         if torch.cuda.is_available():
             embed_model = embed_model.cuda()
         with torch.no_grad():
@@ -342,20 +398,29 @@ class DatasetDebugger( object ):
            
         return embeddings, labels
 
-    def load_self_influence_results( self ) -> SelfInfluenceResults:
+    def load_self_influence_results(
+            self,
+            load_train_data:bool = True,
+    ) -> SelfInfluenceResults:
 
-        file_name = os.path.join( self.cfg.data_influence.self_influence_path, self.cfg.file_names.self_influence_results )
-        self_influence_results = SelfInfluenceResults.load( file_name )
+        file_name = self.cfg.file_names.train_dataset_self_influence_results if load_train_data else self.cfg.file_names.test_dataset_self_influence_results        
+        file_path = os.path.join( self.cfg.data_influence.self_influence_path, file_name )
+        self_influence_results = SelfInfluenceResults.load( file_path )
         
         return self_influence_results
 
-    def load_prop_oppo_results( self ) -> ProponentOpponentsResults:
+    def load_prop_oppo_results(
+            self,
+            load_train_data:bool = True,
+    ) -> ProponentOpponentsResults:
 
-        file_name = os.path.join( self.cfg.data_influence.prop_oppos_path, self.cfg.file_names.prop_oppos_results )        
-        prop_oppo_results = ProponentOpponentsResults.load( file_name )
+        file_name = self.cfg.file_names.train_dataset_prop_oppos_results if load_train_data else self.cfg.file_names.test_dataset_prop_oppos_results
+        file_path = os.path.join( self.cfg.data_influence.prop_oppos_path, file_name )
+        prop_oppo_results = ProponentOpponentsResults.load( file_path )
         
         return prop_oppo_results
 
+    '''
     def load_train_dataset_mislabel_score( self ):
 
         file_name = os.path.join( self.cfg.project.output_dir, self.cfg.file_names.train_dataset_mislabel_scores )
@@ -363,4 +428,4 @@ class DatasetDebugger( object ):
             idx__mislabel_score = np.load( fp )
 
         return idx__mislabel_score
-    
+    '''

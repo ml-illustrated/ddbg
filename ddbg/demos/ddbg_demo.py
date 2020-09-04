@@ -22,17 +22,18 @@ def main():
     project_config = load_yaml_config( opt.recipe )
     ddbg_project = DatasetDebugger( project_config )
 
-    ddbg_results = ddbg_project.calc_dataset__mislabel_scores()
+    ddbg_results = ddbg_project.calc_train_dataset__mislabel_scores()
+    # ddbg_results = ddbg_project.load_ddbg_project_results()
 
     ddbg_viz = DdbgVisualize( ddbg_project )
 
     # ddbg_viz.visualize_base_model_loss_curve()
 
-    self_influence_results = ddbg_project.load_self_influence_results()
-    oppo_prop_results = ddbg_project.load_prop_oppo_results()
-    ddbg_viz.visualize_top_self_influence( self_influence_results, oppo_prop_results )
+    ddbg_viz.visualize_top_self_influence( ddbg_results, end_idx=16 )
 
-    ddbg_viz.visualize_embeddings( self_influence_results, oppo_prop_results )
+    ddbg_viz.visualize_top_mislabel_score_items( ddbg_results, end_idx=16 )
+
+    ddbg_viz.visualize_dataset_embeddings( ddbg_results )
 
 
 
