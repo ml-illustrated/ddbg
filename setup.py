@@ -30,7 +30,7 @@ requirements = [
 
 setup(
     name="ddbg",
-    version="0.0.1",
+    version="version='0.0.2'",
     url="https://github.com/ml-illustrated/ddbg",
     author="ML Illustrated",
     author_email="gerald@ml-illustrated.com",
