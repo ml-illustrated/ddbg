@@ -203,7 +203,7 @@ class TrainEmbeddingModelBase( pytorch_lightning.LightningModule ):
     def training_epoch_end(self, outputs):
 
         losses_mean = np.array( [ i['loss'].detach().cpu().numpy() for i in outputs ] ).mean()
-        msg = 'Train epoch %d Loss: %g' % ( self.current_epoch, losses_mean )
+        msg = 'Train Epoch %d Loss: %g' % ( self.current_epoch, losses_mean )
         
         metrics_dict = { 'loss_mean' : losses_mean }
         for metric in self.metrics:
@@ -222,4 +222,5 @@ class TrainEmbeddingModelBase( pytorch_lightning.LightningModule ):
         if checkpoint_load_path==None:
             checkpoint_load_path = self.checkpoint_save_path
         path = '%s/checkpoint.e%d.pt' % ( checkpoint_load_path, epoch )
+        ddbg_logger.debug( 'load pretrained embed %s' % path )
         self.load_state_dict( torch.load(path) )

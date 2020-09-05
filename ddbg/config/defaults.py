@@ -34,7 +34,7 @@ _DefC.trainer.base.optimizer.momentum = 0.9 # default for resnet50 cifar10
 _DefC.trainer.base.optimizer.weight_decay = 1e-4 # default for resnet50 cifar10
 
 _DefC.trainer.base.lr_schedule = CfgNode()
-_DefC.trainer.base.lr_schedule.steps = '8' # comma delimited epochs
+_DefC.trainer.base.lr_schedule.steps = 8,-1
 _DefC.trainer.base.lr_schedule.cosine = False
 # _DefC.trainer.base.lr_schedule.gamma = 0.1
 

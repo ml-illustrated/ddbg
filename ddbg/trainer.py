@@ -21,27 +21,26 @@ class ModelTrainer( object ):
         self.gpus = config.trainer.gpus
         self.max_epochs = config.trainer.base.epochs
         self.batch_size = config.trainer.base.batch_size
+        self.num_workers = config.trainer.num_workers        
 
         self.log_dir = config.project.log_dir        
         self.project_name = config.project.name
 
-        # TODO: move auto config out
-        if type( config.trainer.num_workers ) == str and config.trainer.num_workers == 'auto':
-            self.num_workers = psutil.cpu_count(logical=False)
-        else:
-            self.num_workers = config.trainer.num_workers        
-
         self.model.set_per_epoch_train_dataloader_fx( self.get_per_epoch_dataloaders )
 
     def train( self ):
+        train_loader, _ = self.get_per_epoch_dataloaders( 0, download=True ) # preload
+        refresh_rate = int( len( train_loader ) * 0.05 ) # refresh every 5%
+        del train_loader
+        
         tb_logger = TensorBoardLogger( save_dir=self.log_dir, name='%s_base' % self.project_name )
         trainer = pytorch_lightning.Trainer(
             max_epochs = self.max_epochs,
             gpus = self.gpus,
-            progress_bar_refresh_rate = 50,
+            progress_bar_refresh_rate = refresh_rate,
             reload_dataloaders_every_epoch = True,
             logger = tb_logger,
-            checkpoint_callback = False, # disable since saving
+            checkpoint_callback = False, # disable since saving every epoch already
         )
 
         # begin training
@@ -61,13 +60,13 @@ class ModelTrainer( object ):
         
 
 
-    def get_per_epoch_dataloaders( self, epoch_num ):
+    def get_per_epoch_dataloaders( self, epoch_num, download=False ):
         batch_size = self.batch_size
         train_loader, test_loader = self.dataset.get_dataloaders(
             data_dir=self.dataset_dir,
             batch_size=batch_size,
             num_workers=self.num_workers,
-            download = epoch_num==0,
+            download=download,
         )
         return train_loader, test_loader
         
@@ -94,17 +93,12 @@ class EmbeddingTrainer( object ):
         self.samples_per_class = config.trainer.embedding.samples_per_class
         self.self_influence_percentile = config.trainer.embedding.self_influence_percentile
         self.pretrained_base_epoch = config.trainer.embedding.pretrained_base_epoch
+        self.num_workers = config.trainer.num_workers        
 
         self.log_dir = config.project.log_dir        
         self.project_name = config.project.name
 
         assert self.max_epochs >= self.phase_one_epochs, 'max_epochs must be equal or greater than phase_one_epochs'
-
-        # TODO: move auto config out
-        if type( config.trainer.num_workers ) == str and config.trainer.num_workers == 'auto':
-            self.num_workers = psutil.cpu_count(logical=False)
-        else:
-            self.num_workers = config.trainer.num_workers        
 
         if self.self_influence_percentile:
             self_influence_scores = self_influence_results.self_influence_scores
@@ -119,11 +113,15 @@ class EmbeddingTrainer( object ):
             ddbg_logger.info( 'loaded base model epoch %d' % self.pretrained_base_epoch )
         
     def train( self ):
+        train_loader, _ = self.get_per_epoch_dataloaders( 0, download=True ) # preload        
+        refresh_rate = int( len( train_loader ) * 0.05 ) # refresh every 5%
+        del train_loader
+        
         tb_logger = TensorBoardLogger( save_dir=self.log_dir, name='%s_embed' % self.project_name )
         trainer = pytorch_lightning.Trainer(
             max_epochs = self.max_epochs,
             gpus = self.gpus,
-            progress_bar_refresh_rate = 50,
+            progress_bar_refresh_rate = refresh_rate,
             reload_dataloaders_every_epoch = True,
             logger = tb_logger,
             checkpoint_callback = False, # disable checkpoints
@@ -133,7 +131,7 @@ class EmbeddingTrainer( object ):
         trainer.fit( self.model )
     
 
-    def get_per_epoch_dataloaders( self, epoch_num ):
+    def get_per_epoch_dataloaders( self, epoch_num, download=False ):
         percentile = self.self_influence_percentile
         if percentile:
             if epoch_num+1 >= self.phase_one_epochs:
@@ -151,6 +149,7 @@ class EmbeddingTrainer( object ):
             self.dataset.get_train_transform(),
             self.dataset.get_test_transform(),
             train_subset_indicies=train_subset_indicies,
+            download=download,
         )
 
         n_classes = self.dataset.num_classes

@@ -1,0 +1,25 @@
+project:
+  name: 'sample_fashion_mnist_embed2'
+  output_dir: './outputs/ddbg_results/fashion_mnist/embed2'
+dataset:
+  name: 'fashion_mnist'
+model:
+  arch: 'embed2'
+  checkpoint_path: './outputs/ckpts_base/fashion_mnist/embed2'
+trainer:
+  base:
+    epochs: 48
+    batch_size: 256
+    base_lr: 0.005
+    optimizer:
+      name: 'adam'
+    lr_schedule:
+      steps: 36,-1
+  embedding:
+    pretrained_base_epoch: 40
+    checkpoint_path: './outputs/ckpts_embed/fashion_mnist/embed2'
+data_influence:
+  checkpoint_epochs: 32,36,40
+  self_influence_path: './outputs/ddbg_results/fashion_mnist/embed2'
+  prop_oppos_path: './outputs/ddbg_results/fashion_mnist/embed2'
+

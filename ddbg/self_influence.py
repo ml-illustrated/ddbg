@@ -78,8 +78,6 @@ class DatasetSelfInfluence( object ):
         self.func_model__monitor_layer = func_model__monitor_layer
         self.data_loader = data_loader
 
-        self.logger = logging.getLogger('ddbg')
-
     def calc_self_influence_results(
             self
     ) -> SelfInfluenceResults:

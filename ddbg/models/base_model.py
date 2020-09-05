@@ -44,8 +44,8 @@ class TrainModelBase( pytorch_lightning.LightningModule ):
         self.lr = cfg.trainer.base.base_lr
         self.lr_steps = None
         if cfg.trainer.base.lr_schedule.steps:
-            lr_steps = cfg.trainer.base.lr_schedule.steps
-            self.lr_steps = [ int(i) for i in lr_steps.split(',') ]
+            self.lr_steps = [ s for s in cfg.trainer.base.lr_schedule.steps if s != -1 ]
+            # self.lr_steps = [ int(i) for i in lr_steps.split(',') ]
 
         self.max_epochs = cfg.trainer.base.epochs
         self.cosine_schedule = cfg.trainer.base.lr_schedule.cosine

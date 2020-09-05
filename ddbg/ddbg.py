@@ -64,7 +64,7 @@ class DatasetDebugger( object ):
         self.logger.info( 'Training base model done.')
 
         self_influence_results = self.calc_dataset_self_influence()
-        prop_oppo_results = self.calc_dataset_proponent_opponents( precalc_all_prop_oppos )
+        prop_oppo_results = self.calc_dataset_proponent_opponents( precalc_all_prop_oppos=precalc_all_prop_oppos )
         '''
         self_influence_results = self.load_self_influence_results()
         prop_oppo_results = self.load_prop_oppo_results()

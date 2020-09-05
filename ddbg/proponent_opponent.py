@@ -10,6 +10,8 @@ import torch.nn as nn
 
 from tqdm.auto import tqdm
 
+ddbg_logger = logging.getLogger('ddbg')
+
 class ProponentOpponentsResults( object ):
 
     def __init__(
@@ -98,8 +100,6 @@ class DatasetProponentOpponents( object ):
         self.models = models
         self.data_loader = data_loader
 
-        self.logger = logging.getLogger('ddbg')
-        
     def calc_proponent_opponent_results(
             self,
             precalc_all_prop_oppos: bool = True,
@@ -109,6 +109,8 @@ class DatasetProponentOpponents( object ):
         prop_oppo_results = self.gen_trackin_gradients()
 
         if precalc_all_prop_oppos:
+            ddbg_logger.info( 'Precomputing dataset proponents & opponents' )
+            
             dataset_top_proponents, dataset_top_opponents = self.precompute_dataset__top_proponents_opponents(
                 prop_oppo_results,
                 top_k=top_k,
