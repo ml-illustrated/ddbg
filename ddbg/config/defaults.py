@@ -66,3 +66,13 @@ _DefC.file_names.train_dataset_prop_oppos_results = 'train_dataset_prop_oppos_re
 _DefC.file_names.test_dataset_prop_oppos_results = 'test_dataset_prop_oppos_results.npy'
 _DefC.file_names.train_dataset_mislabel_scores = 'train_dataset_mislabel_scores.npy'
 _DefC.file_names.test_dataset_mislabel_scores = 'test_dataset_mislabel_scores.npy'
+
+
+_DefC.active_learning = CfgNode()
+_DefC.active_learning.init_num_samples = 3000
+_DefC.active_learning.per_cycle_train_epochs = 10
+_DefC.active_learning.per_cycle_num_samples = 1000
+_DefC.active_learning.total_num_cycles = 20
+_DefC.active_learning.unlabeled_rank_method = 'random'
+_DefC.active_learning.unlabeled_similary_measure = 'logits'
+

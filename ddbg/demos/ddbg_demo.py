@@ -6,7 +6,7 @@ from ddbg import DatasetDebugger, DdbgVisualize
 
 def parse_args():
 
-    parser = argparse.ArgumentParser('argument for ddbug demo')
+    parser = argparse.ArgumentParser('argument for ddbg demo')
 
     # yaml
     parser.add_argument('--recipe', type=str, default='ddbg/recipes/mnist.yaml')

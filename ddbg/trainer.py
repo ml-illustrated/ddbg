@@ -26,13 +26,20 @@ class ModelTrainer( object ):
         self.log_dir = config.project.log_dir        
         self.project_name = config.project.name
 
+        self.train_subset_indicies = None
+                    
         self.model.set_per_epoch_train_dataloader_fx( self.get_per_epoch_dataloaders )
 
-    def train( self ):
-        train_loader, _ = self.get_per_epoch_dataloaders( 0, download=True ) # preload
-        refresh_rate = int( len( train_loader ) * 0.05 ) # refresh every 5%
-        del train_loader
-        
+    def train( self, train_subset_indicies=None ):
+        if type( train_subset_indicies) != type( None ):
+            self.train_subset_indicies = train_subset_indicies
+            dataset_len = train_subset_indicies.shape[0]
+        else:
+            train_loader, _ = self.get_per_epoch_dataloaders( 0, download=True ) # preload
+            dataset_len = len( train_loader )
+            del train_loader
+        refresh_rate = int( dataset_len * 0.05 ) # refresh every 5%
+
         tb_logger = TensorBoardLogger( save_dir=self.log_dir, name='%s_base' % self.project_name )
         trainer = pytorch_lightning.Trainer(
             max_epochs = self.max_epochs,
@@ -58,18 +65,16 @@ class ModelTrainer( object ):
         ddbg_logger.info( 'Base model Test_accuracy: %0.2f%%' % ( model_metric ) )
         return model_metric
         
-
-
     def get_per_epoch_dataloaders( self, epoch_num, download=False ):
         batch_size = self.batch_size
         train_loader, test_loader = self.dataset.get_dataloaders(
             data_dir=self.dataset_dir,
             batch_size=batch_size,
             num_workers=self.num_workers,
+            train_subset_indicies=self.train_subset_indicies,
             download=download,
         )
         return train_loader, test_loader
-        
 
 
 class EmbeddingTrainer( object ):

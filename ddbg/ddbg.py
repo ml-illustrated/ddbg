@@ -98,17 +98,21 @@ class DatasetDebugger( object ):
         return ddbg_results
         
         
-    def train_base_model( self ):
-        model = self._init_model()
+    def train_base_model( self, model=None, train_subset_indices=None ):
+        if model == None:
+            model = self._init_model()
 
         model_trainer = ModelTrainer(
             self.cfg,
             self.dataset,
             model,
         )
-        model_trainer.train()
-        model_trainer.eval_base_model_metric()
+        model_trainer.train( train_subset_indices )
+        metric = model_trainer.eval_base_model_metric()
 
+        return model, metric
+
+        
     def calc_dataset_self_influence(
             self,
             use_train_dataset: bool = True,
@@ -299,6 +303,8 @@ class DatasetDebugger( object ):
         formatter = logging.Formatter( log_format )
         
         self.logger = logging.getLogger('ddbg')
+        if self.logger.hasHandlers(): return
+        
         self.logger.setLevel(logging.INFO)
         
         console = logging.StreamHandler()

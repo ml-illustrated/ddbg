@@ -52,13 +52,24 @@ class DdbgVisualize( object ):
         plt.xlabel('Step')
         plt.ylabel('Loss')
 
-    
+    def visualize_self_influence_histogram(
+            self,
+            ddbg_results: DdbgResults,
+            bins: int = 25, # ???
+    ):
+
+        self_influence_scores = ddbg_results.self_influence_scores
+        self_influence_scores = self_influence_scores[ self_influence_scores < self_influence_scores.max() ]
+        plt.figure(figsize=(10,10))
+        plt.title( 'Log Histogram of Self Influence Scores' )
+        n, bins, patches = plt.hist(self_influence_scores, bins, density=True, facecolor='g', alpha=0.75, log=True)
+        plt.xlabel('Self Influence Score')
+        plt.ylabel('Probability')
+        
 
     def visualize_top_self_influence(
             self,
             ddbg_results: DdbgResults,            
-            # self_influence_results: SelfInfluenceResults,
-            # prop_oppo_results: ProponentOpponentsResults = None,
             start_idx: int = 0,
             end_idx: int = 8,
             rows: int = 8,
@@ -68,7 +79,6 @@ class DdbgVisualize( object ):
         dataset = self.dataset
         train_dataset, _ = dataset.get_datasets( self.cfg.dataset.dataset_path, None, None)
 
-        # self_influence_scores = self_influence_results.self_influence_scores
         self_influence_scores = ddbg_results.self_influence_scores        
         indices = np.argsort(-self_influence_scores if sort_order=='highest' else self_influence_scores)
 

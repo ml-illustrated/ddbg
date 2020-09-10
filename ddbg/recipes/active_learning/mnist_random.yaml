@@ -1,0 +1,33 @@
+project:
+  name: 'sample_mnist_embed2_active_learn'
+  output_dir: '/tmp/mnist_active_learn/embed2'
+dataset:
+  name: 'mnist'
+model:
+  arch: 'embed2'
+  checkpoint_path: '/tmp/mnist_active_learn/embed2'
+trainer:
+  base:
+    epochs: 12
+    batch_size: 64
+    optimizer:
+      name: 'adam'
+  embedding:
+    pretrained_base_epoch: 6
+    checkpoint_path: '/tmp/mnist_active_learn/mnist/embed2'
+data_influence:
+  checkpoint_epochs: 4,6,8
+  self_influence_path: '/tmp/mnist_active_learn/mnist/embed2'
+  prop_oppos_path: '/tmp/mnist_active_learn/mnist/embed2'
+active_learning:
+  init_num_samples: 3000
+  per_cycle_train_epochs: 10
+  per_cycle_num_samples: 300
+  total_num_cycles: 10
+  unlabeled_rank_method: 'random'
+  # unlabeled_rank_method: 'min_logits'
+  # unlabeled_rank_method: 'max_self_influence'
+  # unlabeled_rank_method: 'min_self_influence'
+  # unlabeled_similary_measure = 'logits'
+  # unlabeled_similary_measure = 'embeds'
+
