@@ -1,0 +1,44 @@
+project:
+  name: 'sample_cifar10_resnet50_active_learn'
+  output_dir: '/tmp/cifar10_active_learn/ddbg_results/cifar10/resnet50'
+dataset:
+  name: 'cifar10'
+model:
+  arch: 'resnet50'
+  checkpoint_path: '/tmp/cifar10_active_learn/ckpts_base/cifar10/resnet50'
+trainer:
+  base:
+    epochs: 100
+    batch_size: 1024
+    base_lr: 0.8
+    lr_decay_rate: 0.1
+    lr_schedule:
+      cosine: True
+    optimizer:
+      momentum: 0.9
+      weight_decay: 1e-4
+  embedding:
+    pretrained_base_epoch: 70
+    checkpoint_path: '/tmp/cifar10_active_learn/ckpts_embed/cifar10/resnet50'
+
+data_influence:
+  checkpoint_epochs: 60,70,80
+  self_influence_path: '/tmp/cifar10_active_learn/ddbg_results/cifar10/resnet50'
+  prop_oppos_path: '/tmp/cifar10_active_learn/ddbg_results/cifar10/resnet50'
+
+active_learning:
+  init_num_samples: 3000
+  per_cycle_train_epochs: 10
+  # per_cycle_num_samples: 300
+  # total_num_cycles: 10
+  per_cycle_num_samples: 3000
+  total_num_cycles: 2
+  # unlabeled_rank_method: 'random' # baseline
+  # unlabeled_rank_method: 'min_logits' # strong baseline
+  unlabeled_rank_method: 'idealized_self_influence'
+  idealized_self_influence_path: './outputs/ddbg_results/cifar10/resnet50'
+  # unlabeled_rank_method: 'max_self_influence'
+  # unlabeled_rank_method: 'min_self_influence'
+  # unlabeled_similary_measure = 'logits'
+  # unlabeled_similary_measure = 'embeds'
+

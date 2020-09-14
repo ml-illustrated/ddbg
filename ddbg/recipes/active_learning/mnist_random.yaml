@@ -22,10 +22,14 @@ data_influence:
 active_learning:
   init_num_samples: 3000
   per_cycle_train_epochs: 10
-  per_cycle_num_samples: 300
-  total_num_cycles: 10
-  unlabeled_rank_method: 'random'
-  # unlabeled_rank_method: 'min_logits'
+  # per_cycle_num_samples: 300
+  # total_num_cycles: 10
+  per_cycle_num_samples: 3000
+  total_num_cycles: 2
+  # unlabeled_rank_method: 'random' # baseline
+  # unlabeled_rank_method: 'min_logits' # strong baseline
+  unlabeled_rank_method: 'idealized_self_influence'
+  idealized_self_influence_path: './outputs/ddbg_results/mnist/embed2'
   # unlabeled_rank_method: 'max_self_influence'
   # unlabeled_rank_method: 'min_self_influence'
   # unlabeled_similary_measure = 'logits'

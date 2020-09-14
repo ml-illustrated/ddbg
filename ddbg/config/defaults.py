@@ -75,4 +75,5 @@ _DefC.active_learning.per_cycle_num_samples = 1000
 _DefC.active_learning.total_num_cycles = 20
 _DefC.active_learning.unlabeled_rank_method = 'random'
 _DefC.active_learning.unlabeled_similary_measure = 'logits'
+_DefC.active_learning.idealized_self_influence_path = ''
 
