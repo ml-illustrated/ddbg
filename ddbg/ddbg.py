@@ -111,15 +111,18 @@ class DatasetDebugger( object ):
 
     def calc_dataset_self_influence(
             self,
+            data_loader = None,
             use_train_dataset: bool = True,
+            save_results: bool = True,
     ) -> SelfInfluenceResults:
 
         self.logger.info( 'Calculating self influence..' )
         
         models = self._load_base_model_checkpoints()
 
-        train_loader, test_loader = self._get_dataset_for_data_influence()
-        data_loader = train_loader if use_train_dataset else test_loader
+        if not data_loader:
+            train_loader, test_loader = self._get_dataset_for_data_influence()
+            data_loader = train_loader if use_train_dataset else test_loader
 
         embed_layer_name = self.cfg.model.embed_layer_name
 
@@ -134,7 +137,7 @@ class DatasetDebugger( object ):
         
         self_influence_results = self_infl_gen.calc_self_influence_results()
 
-        if self.cfg.data_influence.self_influence_path:
+        if save_results and self.cfg.data_influence.self_influence_path:
             file_name = self.cfg.file_names.train_dataset_self_influence_results if use_train_dataset else self.cfg.file_names.test_dataset_self_influence_results
             file_name = os.path.join( self.cfg.data_influence.self_influence_path, file_name )
             self_influence_results.save( file_name )

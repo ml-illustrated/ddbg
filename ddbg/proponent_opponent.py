@@ -229,6 +229,7 @@ class DatasetProponentOpponents( object ):
             activation: np.ndarray,
             prop_oppo_results: ProponentOpponentsResults,
             top_k: int=5,
+            exclude_indices = None,
     ) -> Tuple[ np.ndarray, np.ndarray ]:
 
         train_loss_grads = prop_oppo_results.dataset_loss_grads
@@ -250,6 +251,9 @@ class DatasetProponentOpponents( object ):
         # zero out any activation that's negative
         activation_similarity[ activation_similarity < 0 ] = 0.0
         combined_scores = loss_grad_similarity_normed * activation_similarity
+
+        if type( exclude_indices ) != type( None ):
+            combined_scores[ exclude_indices ] = 0.0
     
         opponents = []
         proponents = []

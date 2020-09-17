@@ -71,9 +71,22 @@ class DatasetWithIDsBase( Dataset ):
 
         return train_set, test_set
 
-    def get_dataloaders(self, data_dir, batch_size=128, num_workers=4, shuffle=True, train_subset_indicies=None, download=True):
-        train_transform = self.get_train_transform()
-        test_transform = self.get_test_transform()
+    def get_dataloaders(
+            self,
+            data_dir: str,
+            batch_size: int = 128,
+            num_workers: int = 4,
+            shuffle: bool = True,
+            train_subset_indicies=None,
+            download: bool = True,
+            train_transform = None,
+            test_transform = None,
+    ):
+        
+        if not train_transform:
+            train_transform = self.get_train_transform()
+        if not test_transform:
+            test_transform = self.get_test_transform()
         
         train_set, test_set = self.get_datasets(
             data_dir,
